@@ -55,6 +55,8 @@ class Buffer:
         :param end_epoch: epoch of the final timestamp in the range
         :return: bool
         """
+        if start_epoch <= 0 or end_epoch <= 0 or start_epoch > end_epoch:
+            return False
         if len(self._buffer) == 0:
             return False
         return self._buffer[0].timestamp >= start_epoch and self._buffer[-1].timestamp <= end_epoch
@@ -140,7 +142,7 @@ if __name__ == "__main__":
             buffer_size_type = 'time'
         if topic[0] != '/':
             topic = '/' + topic
-        b = BufferServiceNode(topic, buffer_size)
+        b = BufferServiceNode(topic, buffer_size, buffer_size_type)
     except KeyError as e:
         print "Missing argument. Usage: _topic:=<str> _buffer_size:=<int>"
         print e
