@@ -8,7 +8,8 @@ rospy.init_node('buffer_service_caller_example')
 
 rospy.wait_for_service('buffer_service/test')
 service = rospy.ServiceProxy('buffer_service/test', BufferSrv)
-r = BufferSrvRequest(start_time=rospy.Time.now()-rospy.Duration(5),end_time=rospy.Time.now())
+r = BufferSrvRequest(start_time=rospy.Time.now()-rospy.Duration(6),end_time=rospy.Time.now()-rospy.Duration(1))
+
 print r
 res = service(r)
 print res

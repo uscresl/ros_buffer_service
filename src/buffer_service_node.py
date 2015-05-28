@@ -1,7 +1,7 @@
 #!/usr/bin/python
 """
 Defines a buffer service that can record any ROS topic (as a subscriber) and can then
-replay thoseself,  messages as JSON
+replay those messages as JSON
 """
 
 import json
@@ -60,7 +60,7 @@ class Buffer:
             return False
         if len(self._buffer) == 0:
             return False
-        return self._buffer[0].timestamp >= start_epoch and self._buffer[-1].timestamp <= end_epoch
+        return self._buffer[0].timestamp <= start_epoch and self._buffer[-1].timestamp >= end_epoch
 
     def closest_timestamp_index(self, timestamp):
         return self.search_closest(self._buffer, 0, len(self._buffer), timestamp)
