@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>buffer_service</name>
+  <name>ros_buffer_service</name>
   <version>1.0.0</version>
   <description>The buffer_service package</description>
 

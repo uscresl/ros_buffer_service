@@ -8,8 +8,9 @@ import json
 import rospy
 import rosgraph
 from roslib import message as roslib_message
-from record_service.srv import *
+from ros_buffer_service.srv import *
 import time
+from rosbridge_library.internal import message_conversion
 
 TIME_BUFFER = 1
 COUNT_BUFFER = 2
@@ -111,7 +112,7 @@ class BufferServiceNode:
             print "Topic: %s wasn't found in the current topics." % topic
             return
         self.subscriber = rospy.Subscriber(topic, self.msg_type, self.subscriber_callback)
-        self.service = rospy.Service('buffer_service' + topic, RecordSrv, self.request_handler)
+        self.service = rospy.Service('buffer_service' + topic, BufferSrv, self.request_handler)
         rospy.spin()
 
     def subscriber_callback(self, data):
@@ -119,11 +120,11 @@ class BufferServiceNode:
 
     @staticmethod
     def to_json(data_list):
-        return json.dumps([data.msg for data in data_list])
+        return json.dumps([message_conversion.extract_values(data.msg) for data in data_list])
 
     def request_handler(self, data):
-        start_time_epoch = data.start_time.secs
-        end_time_epoch = date.end_time.secs
+        start_time_epoch = data.start_time.to_sec()
+        end_time_epoch = data.end_time.to_sec()
         # Check that we have the data for the requested timeframe
         if self.buffer.check_range(start_time_epoch, end_time_epoch):
             messages = self.buffer.buffer_range(start_time_epoch, end_time_epoch)

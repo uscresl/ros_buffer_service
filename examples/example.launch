@@ -1,0 +1,7 @@
+<launch>
+    <node pkg="rostopic" type="rostopic" name="rostopic_pub" args="pub -r 10 /test std_msgs/Int8 1" />
+    <node pkg="ros_buffer_service" type="buffer_service_node.py" name="buffer_service" output="screen">
+        <param name="topic"  value="/test" />
+        <param name="buffer_size" value="10" />
+    </node>
+</launch>
