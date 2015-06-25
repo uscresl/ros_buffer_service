@@ -60,7 +60,7 @@ class Buffer:
             return False
         if len(self._buffer) == 0:
             return False
-        return self._buffer[0].timestamp <= start_epoch and self._buffer[-1].timestamp >= end_epoch
+        return True
 
     def closest_timestamp_index(self, timestamp):
         return self.search_closest(self._buffer, 0, len(self._buffer), timestamp)
