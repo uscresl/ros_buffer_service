@@ -121,7 +121,8 @@ class BufferServiceNode:
         self.service = rospy.Service('buffer_service' + topic, BufferSrv, self.request_handler)
 
         rospy.Timer(rospy.Duration(10), self.loop)
-
+        rospy.spin()
+        
     def loop(self, event):
         rospy.loginfo("Buffer size: %d" % len(self.buffer))
 
