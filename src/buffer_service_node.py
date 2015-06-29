@@ -95,6 +95,12 @@ class Buffer:
         end_index = self.closest_timestamp_index(end_epoch)
         return self._buffer[start_index:end_index]
 
+    def __len__(self):
+        """
+        Return the current size of the buffer.
+        """
+        return len(self._buffer)
+
 
 class BufferServiceNode:
     def __init__(self, topic, buffer_size, buffer_size_type):
@@ -113,7 +119,11 @@ class BufferServiceNode:
             return
         self.subscriber = rospy.Subscriber(topic, self.msg_type, self.subscriber_callback)
         self.service = rospy.Service('buffer_service' + topic, BufferSrv, self.request_handler)
-        rospy.spin()
+
+        rospy.Timer(10, self.loop)
+
+    def loop(self, event):
+        rospy.loginfo("Buffer size: %d" % len(self.buffer))
 
     def subscriber_callback(self, data):
         self.buffer.add(data)
@@ -125,9 +135,11 @@ class BufferServiceNode:
     def request_handler(self, data):
         start_time_epoch = data.start_time.to_sec()
         end_time_epoch = data.end_time.to_sec()
+        rospy.loginfo("Received request for %f to %f" % (start_time_epoch, end_time_epoch))
         # Check that we have the data for the requested timeframe
         if self.buffer.check_range(start_time_epoch, end_time_epoch):
             messages = self.buffer.buffer_range(start_time_epoch, end_time_epoch)
+            rospy.loginfo("Returned %d messages" % len(messages))
             return BufferSrvResponse(0, self.to_json(messages))
         else:
             return BufferSrvResponse(1, "Requested time-range has not been buffered")
