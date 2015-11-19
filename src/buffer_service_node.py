@@ -18,14 +18,14 @@ COUNT_BUFFER = 2
 class BufferObject:
     def __init__(self, msg):
         self.msg = msg
-        self.timestamp = time.time()
+        self.timestamp = time.time() # May cause issue with non-realtime simulations
 
 
 class Buffer:
     """
     A FIFO buffer that is able to maintain a certain number of elements.
     """
-    def __init__(self, buffer_size, buffer_size_type):
+    def __init__(self, buffer_size, buffer_size_type, throttle_rate=None):
         self._buffer = list()
         self.buffer_size = buffer_size
         if buffer_size_type == 'time':
@@ -33,12 +33,24 @@ class Buffer:
         else:
             self.buffer_type = COUNT_BUFFER
 
+        if throttle_rate:
+            self.throttle_interval = 1.0/throttle_rate
+        else:
+            self.throttle_interval = None
+
     def add(self, data):
         """
         Add an element to the buffer. If the buffer exceeds the given size,
         then we pop the first element.
         :param data: a generic ROS MSG
         """
+
+        if self.throttle_interval: # Check if there's a throttle rate set
+            if len(self._buffer) > 0:
+                # Don't add to buffer if we are exceeding the throttle rate
+                if time.time()-self._buffer[-1].timestamp < self.throttle_interval:
+                    return
+
         if self.buffer_type == COUNT_BUFFER:
             if len(self._buffer) == self.buffer_size:
                 self._buffer.pop(0)
@@ -103,9 +115,10 @@ class Buffer:
 
 
 class BufferServiceNode:
-    def __init__(self, topic, buffer_size, buffer_size_type):
-        self.buffer = Buffer(buffer_size, buffer_size_type)
+    def __init__(self, topic, buffer_size, buffer_size_type, throttle_rate, namespace):
+        self.buffer = Buffer(buffer_size, buffer_size_type, throttle_rate)
         self.topic = topic
+        self.namespace = namespace
         master_topics_graph = rosgraph.Master('/rostopic')
         topics = master_topics_graph.getTopicTypes()
 
@@ -118,11 +131,11 @@ class BufferServiceNode:
             print "Topic: %s wasn't found in the current topics." % topic
             return
         self.subscriber = rospy.Subscriber(topic, self.msg_type, self.subscriber_callback)
-        self.service = rospy.Service('buffer_service' + topic, BufferSrv, self.request_handler)
+        self.service = rospy.Service(self.namespace + topic, BufferSrv, self.request_handler)
 
         rospy.Timer(rospy.Duration(10), self.loop)
         rospy.spin()
-        
+
     def loop(self, event):
         rospy.loginfo("Buffer size: %d" % len(self.buffer))
 
@@ -150,13 +163,15 @@ if __name__ == "__main__":
     rospy.init_node('buffer_service')
     try:
         topic = rospy.get_param('~topic')
+        throttle_rate = rospy.get_param('~throttle_rate', None)
+        namespace = rospy.get_param('~namespace', 'buffer_service')
         buffer_size = rospy.get_param('~buffer_size')
         buffer_size_type = rospy.get_param('~buffer_size_type', None)
         if buffer_size_type is None or buffer_size_type not in ['time', 'count']:
             buffer_size_type = 'time'
         if topic[0] != '/':
             topic = '/' + topic
-        b = BufferServiceNode(topic, buffer_size, buffer_size_type)
+        b = BufferServiceNode(topic, buffer_size, buffer_size_type, throttle_rate, namespace)
     except KeyError as e:
         print "Missing argument. Usage: _topic:=<str> _buffer_size:=<int>"
         print e
